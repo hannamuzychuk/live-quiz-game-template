@@ -1,85 +1,64 @@
-# Assignment: WebSocket Live Quiz Game
+# Live Quiz Game — WebSocket Server
 
-## What to do
+This project is a **real-time quiz game** server built with WebSocket (`ws`).  
+Players can register, create games, join games, answer questions, and get live scoring with a speed bonus.
 
-1. **Fork** this repository
-2. **Implement** the WebSocket server in the `server/` folder
-3. The **client** (React frontend) in `client/` is already fully implemented and ready to use — do not modify it
+---
 
-## Project structure
+## Features
 
-```
-├── client/          # Frontend (React + Vite) — fully working, do not modify
-├── server/          # Backend (Node.js + ws) — YOUR implementation goes here
-│   ├── src/
-│   │   ├── index.ts   # Server entry point (starter code provided)
-│   │   └── types.ts   # TypeScript interfaces for all data structures
-│   ├── package.json
-│   └── tsconfig.json
-└── package.json     # Root workspace config
-```
+- WebSocket server supports multiple simultaneous connections
+- Player registration and login (`reg`)
+- Game creation with question validation
+- Join game using a 6-character game code
+- Start game (host only)
+- Real-time question broadcast
+- Submit answers and calculate scores with speed bonus
+- Broadcast question results after the timer
+- End-of-game scoreboard with ranks
+- Handles player disconnects gracefully
 
-## Getting started
+---
 
+## Technical Details
+
+- **Language:** TypeScript
+- **Libraries:** `ws` (WebSocket), `uuid` (unique IDs)
+- **Data Storage:** In-memory objects (`users`, `players`, `games`)
+- **Game Flow:**  
+  1. Player registers → receives `userId`  
+  2. Host creates a game → generates 6-character code  
+  3. Players join → broadcast `player_joined` and `update_players`  
+  4. Host starts the game → sends questions  
+  5. Players answer → scores calculated with speed bonus  
+  6. Question results broadcast → next question starts automatically  
+  7. Game ends → final scoreboard broadcasted  
+
+---
+
+## Running the server
+
+1. **Install dependencies**  
 ```bash
-# Install all dependencies (server + client)
-npm install
+npm install 
 
-# Run both server and client in dev mode
-npm run dev
-
-# Or run them separately:
-npm run start:server   # server only (ws://localhost:3000)
-npm run start:client   # client only (http://localhost:5173)
-```
-
-## What is provided in `server/`
-
-- **`src/types.ts`** — all TypeScript interfaces you need: `Player`, `Question`, `Game`, `User`, `WSMessage`, and request data types (`RegData`, `CreateGameData`, `JoinGameData`, `StartGameData`, `AnswerData`)
-- **`src/index.ts`** — starter code that creates a `WebSocketServer` on port 3000. You need to implement all message handlers here
-- **`package.json`** — dependencies already configured (`ws`, `dotenv`, TypeScript tooling)
-
-## What you need to implement
-
-Your server must handle all WebSocket commands described in the assignment specification. The client expects the following message protocol (all messages are JSON strings with `{ type, data, id: 0 }` format):
-
-**Client → Server commands:**
-- `reg` — register or login a player
-- `create_game` — host creates a game with questions
-- `join_game` — player joins a game by room code
-- `start_game` — host starts the game
-- `answer` — player submits an answer
-
-**Server → Client responses:**
-- `reg` — registration result
-- `game_created` — game created with gameId and room code
-- `game_joined` — join confirmation
-- `player_joined` — broadcast when a player joins
-- `update_players` — broadcast updated player list
-- `question` — broadcast a question (without correct answer!)
-- `answer_accepted` — answer submission confirmed
-- `question_result` — broadcast results after a question ends
-- `game_finished` — broadcast final scoreboard
-- `error` — error message
-
-Refer to the full assignment specification for detailed data structures and the expected game flow.
-
-## How to test
-
-1. Start the server: `npm run start:server`
-2. Start the client: `npm run start:client`
-3. Open `http://localhost:5173` in two browser tabs
-4. In one tab — register and create a game (host)
-5. In the other tab — register and join the game using the room code
-6. Host starts the game, player answers questions
-7. Verify scores, results, and final scoreboard
-
-## Build for production
-
+2. **Run server**
 ```bash
-# Build server
-cd server && npm run build
+node dist/server.js
 
-# Start built server
-npm run start
-```
+3. Server runs on ws://localhost:3000 by default. You can set a custom port using the PORT environment variable.
+
+## WebSocket Message Types
+| Type                  | Data                                                            | Description                               |
+| -----------------     | ----------------------------------------------------------------| ----------------------------------------- |
+| `reg`                 | `{ name, password }`                                            | Register player                           |
+| `create_game`         | `{ questions: Question[] }`                                     | Create a new game                         |
+| `join_game`           | `{ code: string }`                                              | Join an existing game by code             |
+| `start_game`          | `{ gameId }`                                                    | Start the game (host only)                |
+| `answer`              | `{ gameId, questionIndex, answerIndex }`                        | Submit answer                             |
+| `player_joined`       | `{ playerName, playerCount }`                                   | Broadcast when a player joins             |
+| `update_players`      | `{ name, index, score }[]`                                      | Broadcast current player list with scores |
+| `question`            | `{ questionNumber, totalQuestions, options, timeLimitSec }`     | Broadcast new question                    |
+| `question_result`     | `{ questionIndex, correctIndex, playerResults }`                | Broadcast results after a question        |
+| `game_finished`       | `{ scoreboard }`                                                | Broadcast final results                   |
+| `error`               | `{ message }`                                                   | Error messages                            |
